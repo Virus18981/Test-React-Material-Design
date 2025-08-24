@@ -1,14 +1,8 @@
-import { useState } from 'react';
-import { Container } from '@mui/material';
-import {
-  CustomAppBar,
-  EmployeeToolbar,
-  EmployeeTable,
-  EmployeeForm,
-  DeleteDialog
-} from './components';
-import type { Employee, Department } from './types';
-import {mockDepartments, mockEmployees} from './data';
+import { useState } from "react";
+import { Container, Box } from "@mui/material";
+import { CustomAppBar, EmployeeToolbar, EmployeeTable, EmployeeForm, DeleteDialog } from "./components";
+import type { Employee, Department } from "./types";
+import { mockDepartments, mockEmployees } from "./data";
 
 const App = () => {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
@@ -18,12 +12,27 @@ const App = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<Partial<Employee>>({
-    firstName: '',
-    lastName: '',
-    position: '',
+    firstName: "",
+    lastName: "",
+    position: "",
     employmentDate: new Date(),
-    department: 1
+    department: 1,
   });
+  const [errors, setErrors] = useState<Partial<Record<keyof Employee, boolean>>>({});
+
+  const validateForm = (data: Partial<Employee>): boolean => {
+    const newErrors: Partial<Record<keyof Employee, boolean>> = {
+      firstName: !data.firstName,
+      lastName: !data.lastName,
+      position: !data.position,
+      department: !data.department,
+      employmentDate: !data.employmentDate,
+    };
+
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).some((error) => error);
+  };
 
   const handleOpenDialog = (employee?: Employee) => {
     if (employee) {
@@ -32,42 +41,60 @@ const App = () => {
     } else {
       setEditingEmployee(null);
       setFormData({
-        firstName: '',
-        lastName: '',
-        position: '',
+        firstName: "",
+        lastName: "",
+        position: "",
         employmentDate: new Date(),
-        department: 1
+        department: 1,
       });
     }
     setDialogOpen(true);
+    setErrors({});
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingEmployee(null);
+    setErrors({});
   };
 
   const handleFormDataChange = (field: keyof Employee, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: false }));
+    }
   };
 
   const handleSubmit = (data: Partial<Employee>) => {
-    if (!data.firstName || !data.lastName || !data.position || !data.department) {
-      alert('Заполните все обязательные поля');
-      return;
+    if (!validateForm(data)) return;
+
+    const employeeData = {
+      firstName: data.firstName || "",
+      lastName: data.lastName || "",
+      position: data.position || "",
+      department: data.department || 1,
+      employmentDate: data.employmentDate instanceof Date ? data.employmentDate : new Date(data.employmentDate || new Date()),
+      mentorId: data.mentorId,
+    };
+
+    if (editingEmployee?.id) {
+      const updatedEmployee: Employee = {
+        ...employeeData,
+        id: editingEmployee.id,
+      };
+      setEmployees((prev) => prev.map((emp) => (emp.id === editingEmployee.id ? updatedEmployee : emp)));
+    } else {
+      const newId =
+        employees.reduce((maxId, employee) => {
+          return employee.id !== undefined && employee.id > maxId ? employee.id : maxId;
+        }, 0) + 1;
+      const newEmployee: Employee = {
+        ...employeeData,
+        id: newId,
+      };
+      setEmployees((prev) => [...prev, newEmployee]);
     }
 
-    if (editingEmployee && editingEmployee.id) {
-      setEmployees(prev => prev.map(emp =>
-        emp.id === editingEmployee.id ? { ...data, id: editingEmployee.id } as Employee : emp
-      ));
-    } else {
-      const newEmployee: Employee = {
-        ...data as Required<Omit<Employee, 'id' | 'mentorId'>>,
-        id: Math.max(...employees.map(e => e.id || 0), 0) + 1
-      };
-      setEmployees(prev => [...prev, newEmployee]);
-    }
     handleCloseDialog();
   };
 
@@ -78,7 +105,7 @@ const App = () => {
 
   const handleConfirmDelete = () => {
     if (employeeToDelete) {
-      setEmployees(prev => prev.filter(emp => emp.id !== employeeToDelete.id));
+      setEmployees((prev) => prev.filter((emp) => emp.id !== employeeToDelete.id));
       setDeleteDialogOpen(false);
       setEmployeeToDelete(null);
     }
@@ -92,17 +119,12 @@ const App = () => {
   return (
     <>
       <CustomAppBar title="Управление сотрудниками" />
-      
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <EmployeeToolbar onAddEmployee={() => handleOpenDialog()} />
-        
-        <EmployeeTable
-          employees={employees}
-          departments={departments}
-          onEdit={handleOpenDialog}
-          onDelete={handleDeleteClick}
-        />
 
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, height: "80vh", display: "flex", flexDirection: "column" }}>
+        <EmployeeToolbar onAddEmployee={() => handleOpenDialog()} />
+        <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+          <EmployeeTable employees={employees} departments={departments} onEdit={handleOpenDialog} onDelete={handleDeleteClick} />
+        </Box>
         <EmployeeForm
           open={dialogOpen}
           onClose={handleCloseDialog}
@@ -112,6 +134,7 @@ const App = () => {
           departments={departments}
           formData={formData}
           onFormDataChange={handleFormDataChange}
+          errors={errors}
         />
 
         <DeleteDialog

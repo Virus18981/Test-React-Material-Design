@@ -11,12 +11,34 @@ interface EmployeeFormProps {
   departments: Department[];
   formData: Partial<Employee>;
   onFormDataChange: (field: keyof Employee, value: any) => void;
+  errors: Partial<Record<keyof Employee, boolean>>;
 }
 
-export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employees, departments, formData, onFormDataChange }: EmployeeFormProps) => {
+export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employees, departments, formData, onFormDataChange, errors }: EmployeeFormProps) => {
   const handleInputChange = (field: keyof Employee) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    onFormDataChange(field, field === "employmentDate" ? new Date(value) : value);
+
+    if (field === "employmentDate") {
+      const dateValue = value ? new Date(value) : new Date();
+      onFormDataChange(field, dateValue);
+    } else {
+      onFormDataChange(field, value);
+    }
+  };
+
+  const getDateValue = (date: Date | string | undefined | null): string => {
+    if (!date) return "";
+
+    try {
+      const dateObj = typeof date === "string" ? new Date(date) : date;
+
+      if (isNaN(dateObj.getTime())) return "";
+
+      return dateObj.toISOString().split("T")[0];
+    } catch (error) {
+      console.error("Ошибка преобразования даты:", error);
+      return "";
+    }
   };
 
   const handleSubmit = () => {
@@ -28,19 +50,60 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
       <DialogTitle>{editingEmployee ? "Редактирование сотрудника" : "Добавление сотрудника"}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField label="Имя" value={formData.firstName || ""} onChange={handleInputChange("firstName")} fullWidth required />
-          <TextField label="Фамилия" value={formData.lastName || ""} onChange={handleInputChange("lastName")} fullWidth required />
-          <TextField label="Должность" value={formData.position || ""} onChange={handleInputChange("position")} fullWidth required />
+          <TextField
+            label="Имя"
+            value={formData.firstName || ""}
+            onChange={handleInputChange("firstName")}
+            fullWidth
+            required
+            error={errors.firstName}
+            helperText={errors.firstName ? "Обязательное поле" : ""}
+          />
+          <TextField
+            label="Фамилия"
+            value={formData.lastName || ""}
+            onChange={handleInputChange("lastName")}
+            fullWidth
+            required
+            error={errors.lastName}
+            helperText={errors.lastName ? "Обязательное поле" : ""}
+          />
+          <TextField
+            label="Должность"
+            value={formData.position || ""}
+            onChange={handleInputChange("position")}
+            fullWidth
+            required
+            error={errors.position}
+            helperText={errors.position ? "Обязательное поле" : ""}
+          />
           <TextField
             label="Дата приёма на работу"
             type="date"
-            value={formData.employmentDate ? (formData.employmentDate as Date).toISOString().split("T")[0] : ""}
+            value={getDateValue(formData.employmentDate)}
             onChange={handleInputChange("employmentDate")}
             InputLabelProps={{ shrink: true }}
             fullWidth
             required
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" || e.key === "Delete") {
+                e.preventDefault();
+                onFormDataChange("employmentDate", new Date());
+              }
+            }}
+            error={errors.employmentDate}
+            helperText={errors.employmentDate ? "Обязательное поле" : ""}
           />
-          <TextField select label="Отдел" value={formData.department || ""} onChange={handleInputChange("department")} fullWidth required>
+          <TextField
+            select
+            label="Отдел"
+            value={formData.department || ""}
+            onChange={handleInputChange("department")}
+            fullWidth
+            required
+            error={errors.department}
+            helperText={errors.department ? "Обязательное поле" : ""}
+          >
             {departments.map((dept) => (
               <MenuItem key={dept.id} value={dept.id}>
                 {dept.name}
