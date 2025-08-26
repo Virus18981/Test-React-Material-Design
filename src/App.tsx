@@ -3,6 +3,8 @@ import { Container, Box } from "@mui/material";
 import { CustomAppBar, EmployeeToolbar, EmployeeTable, EmployeeForm, DeleteDialog } from "./components";
 import type { Employee, Department } from "./types";
 import { mockDepartments, mockEmployees } from "./data";
+import type { ValidationErrors } from "./utils/validation";
+import { validateEmployeeForm, hasValidationErrors } from "./utils/validation";
 
 const App = () => {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
@@ -18,20 +20,12 @@ const App = () => {
     employmentDate: new Date(),
     department: 1,
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof Employee, boolean>>>({});
+  const [errors, setErrors] = useState<ValidationErrors>({});
 
   const validateForm = (data: Partial<Employee>): boolean => {
-    const newErrors: Partial<Record<keyof Employee, boolean>> = {
-      firstName: !data.firstName,
-      lastName: !data.lastName,
-      position: !data.position,
-      department: !data.department,
-      employmentDate: !data.employmentDate,
-    };
-
+    const newErrors = validateEmployeeForm(data);
     setErrors(newErrors);
-
-    return !Object.values(newErrors).some((error) => error);
+    return !hasValidationErrors(newErrors);
   };
 
   const handleOpenDialog = (employee?: Employee) => {
@@ -57,12 +51,11 @@ const App = () => {
     setEditingEmployee(null);
     setErrors({});
   };
-
-  const handleFormDataChange = (field: keyof Employee, value: any) => {
+const handleFormDataChange = (field: keyof Employee, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: false }));
-    }
+    if (field in errors && errors[field as keyof ValidationErrors]) {
+    setErrors((prev) => ({ ...prev, [field]: false }));
+  }
   };
 
   const handleSubmit = (data: Partial<Employee>) => {
@@ -116,15 +109,17 @@ const App = () => {
     setEmployeeToDelete(null);
   };
 
-  return (
+    return (
     <>
       <CustomAppBar title="Управление сотрудниками" />
 
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, height: "80vh", display: "flex", flexDirection: "column" }}>
         <EmployeeToolbar onAddEmployee={() => handleOpenDialog()} />
+          
         <Box sx={{ flexGrow: 1, overflow: "auto" }}>
           <EmployeeTable employees={employees} departments={departments} onEdit={handleOpenDialog} onDelete={handleDeleteClick} />
         </Box>
+
         <EmployeeForm
           open={dialogOpen}
           onClose={handleCloseDialog}

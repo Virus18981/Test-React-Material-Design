@@ -11,7 +11,8 @@ interface EmployeeTableProps {
 
 export const EmployeeTable = ({ employees, departments, onEdit, onDelete }: EmployeeTableProps) => {
   const getDepartmentName = (departmentId: number) => {
-    return departments.find((dept) => dept.id === departmentId)?.name || "Неизвестно";
+    const department = departments.find((dept) => dept.id === departmentId);
+    return department ? department.name : "Неизвестно";
   };
 
   const getMentorName = (mentorId?: number) => {

@@ -1,6 +1,8 @@
 import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from "@mui/material";
 import type { Employee, Department } from "../../types";
+import type { ValidationErrors } from "../../utils/validation";
+import { getValidationErrorText } from "../../utils/validation";
 
 interface EmployeeFormProps {
   open: boolean;
@@ -11,7 +13,7 @@ interface EmployeeFormProps {
   departments: Department[];
   formData: Partial<Employee>;
   onFormDataChange: (field: keyof Employee, value: any) => void;
-  errors: Partial<Record<keyof Employee, boolean>>;
+  errors: ValidationErrors;
 }
 
 export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employees, departments, formData, onFormDataChange, errors }: EmployeeFormProps) => {
@@ -36,7 +38,6 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
 
       return dateObj.toISOString().split("T")[0];
     } catch (error) {
-      console.error("Ошибка преобразования даты:", error);
       return "";
     }
   };
@@ -57,7 +58,7 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
             fullWidth
             required
             error={errors.firstName}
-            helperText={errors.firstName ? "Обязательное поле" : ""}
+            helperText={errors.firstName ? getValidationErrorText("firstName") : ""}
           />
           <TextField
             label="Фамилия"
@@ -66,7 +67,7 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
             fullWidth
             required
             error={errors.lastName}
-            helperText={errors.lastName ? "Обязательное поле" : ""}
+            helperText={errors.lastName ? getValidationErrorText("lastName") : ""}
           />
           <TextField
             label="Должность"
@@ -75,7 +76,7 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
             fullWidth
             required
             error={errors.position}
-            helperText={errors.position ? "Обязательное поле" : ""}
+            helperText={errors.position ? getValidationErrorText("position") : ""}
           />
           <TextField
             label="Дата приёма на работу"
@@ -92,7 +93,7 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
               }
             }}
             error={errors.employmentDate}
-            helperText={errors.employmentDate ? "Обязательное поле" : ""}
+            helperText={errors.employmentDate ? getValidationErrorText("employmentDate") : ""}
           />
           <TextField
             select
@@ -102,7 +103,7 @@ export const EmployeeForm = ({ open, onClose, onSubmit, editingEmployee, employe
             fullWidth
             required
             error={errors.department}
-            helperText={errors.department ? "Обязательное поле" : ""}
+            helperText={errors.department ? getValidationErrorText("department") : ""}
           >
             {departments.map((dept) => (
               <MenuItem key={dept.id} value={dept.id}>
